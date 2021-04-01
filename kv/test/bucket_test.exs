@@ -11,5 +11,8 @@ defmodule KV.BucketTest do
 
     KV.Bucket.put(bucket, "milk", 3)
     assert KV.Bucket.get(bucket, "milk") == 3
+
+    actual = KV.Bucket.delete(bucket, "milk")
+    assert actual == 3
   end
 end
