@@ -33,22 +33,41 @@ defmodule KV.Registry do
   # issue, and print out a list of valid callbacks.
   @impl true
   def init(:ok) do
-    {:ok, %{}}
+    names = %{}
+    refs = %{}
+    {:ok, {names, refs}}
   end
 
   # Handle a lookup request for `name`
   @impl true
-  def handle_call({:lookup, name}, _from, names) do
-    {:reply, Map.fetch(names, name), names}
+  def handle_call({:lookup, name}, _from, state) do
+    {names, _} = state
+    {:reply, Map.fetch(names, name), state}
   end
 
   @impl true
-  def handle_cast({:create, name}, names) do
+  def handle_cast({:create, name}, {names, refs}) do
     if Map.has_key?(names, name) do
-      {:noreply, names}
+      {:noreply, {names, refs}}
     else
       {:ok, bucket} = KV.Bucket.start_link([])
-      {:noreply, Map.put(names, name, bucket)}
+      ref = Process.monitor(bucket)
+      updated_refs = Map.put(refs, ref, name)
+      updated_names = Map.put(names, name, bucket)
+      {:noreply, {updated_names, updated_refs}}
     end
+  end
+
+  @impl true
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, {names, refs}) do
+    {name, refs} = Map.pop(refs, ref)
+    updated_names = Map.delete(names, name)
+    {:noreply, {updated_names, refs}}
+  end
+
+  @impl true
+  def handle_info(msg, state) do
+    IO.inspect msg
+    {:noreply, state}
   end
 end
