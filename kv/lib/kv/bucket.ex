@@ -1,5 +1,6 @@
 defmodule KV.Bucket do
-  use Agent
+  # The option `restart: :temporary` causes the system to **not** restart the bucket process if it crashes.
+  use Agent, restart: :temporary
 
   @doc """
   Starts a new bucket.
