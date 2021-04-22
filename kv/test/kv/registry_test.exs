@@ -10,12 +10,12 @@ defmodule KV.RegistryTest do
   end
 
   # Ensure that the GenServer, `KV.Registry`, is started before tests.
-  setup do
+  setup context do
     # `start_supervised!` is a function injected by `ExUnit.Case`. This function starts the server and links
     # the unit test process to that server. This linkage allows the unit test framework to stop and restart
     # the server between each and every test.
-    registry = start_supervised!(KV.Registry)
-    %{registry: registry}
+    _ = start_supervised!(KV.Registry, name: context.test)
+    %{registry: context.test}
   end
 
   test "spawns buckets", %{registry: registry} do
