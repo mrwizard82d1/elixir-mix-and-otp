@@ -1,3 +1,11 @@
+# This module is for **pedagogical (teaching) purposes only**. "In practice, if your find yourself in a
+# position where you need a process registry for dynamic processes, your should use the
+# [Registry module](https://hexdocs.pm/elixir/Registry.html) provided as part of Elixir. It provides
+# functionality similar to the one we have built using a `GenServer` + `:ets` while also being able to perform
+# both writes and reads concurrently. (See the
+# [ets page of the Getting Started guide](https://elixir-lang.org/getting-started/mix-otp/ets.html) for a
+# reference to its performance benchmarks.
+
 defmodule KV.Registry do
   # Inject the `GenServer` behaviour
   use GenServer
