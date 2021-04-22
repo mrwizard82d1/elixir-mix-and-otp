@@ -14,7 +14,7 @@ defmodule KV.RegistryTest do
     # `start_supervised!` is a function injected by `ExUnit.Case`. This function starts the server and links
     # the unit test process to that server. This linkage allows the unit test framework to stop and restart
     # the server between each and every test.
-    _ = start_supervised!(KV.Registry, name: context.test)
+    _ = start_supervised!({KV.Registry, name: context.test})
     %{registry: context.test}
   end
 
@@ -35,6 +35,9 @@ defmodule KV.RegistryTest do
     KV.Registry.create(registry, "shopping")
     {:ok, bucket} = KV.Registry.lookup(registry, "shopping")
     Agent.stop(bucket)
+
+    # Perform a bogus, synchronous request to ensure that the registry has processed the :DOWN message.
+    _ = KV.Registry.create(registry, "bogus")
     assert KV.Registry.lookup(registry, "shopping") == :error
   end
 
@@ -44,6 +47,9 @@ defmodule KV.RegistryTest do
 
     # Stop the bucket with a non-normal reason
     Agent.stop(bucket, :shutdown)
+
+    # Perform a bogus, synchronous request to ensure that the registry has processed the :DOWN message.
+    _ = KV.Registry.create(registry, "bogus")
     assert KV.Registry.lookup(registry, "shopping") == :error
   end
 end

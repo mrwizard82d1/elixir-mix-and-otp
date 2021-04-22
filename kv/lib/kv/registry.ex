@@ -23,7 +23,7 @@ defmodule KV.Registry do
   """
   def lookup(server, name) do
     # Lookup is now performed directly in ETS, **without** accessing the server.
-    case :ets.lookup(server) do
+    case :ets.lookup(server, name) do
       [{^name, pid}] -> {:ok, pid}
       [] -> :error
     end
@@ -34,7 +34,7 @@ defmodule KV.Registry do
   """
   def create(server, name) do
     # Make this a `call` to prevent returning **before** the bucket is created in ETS.
-    GenServer.cast(server, {:create, name})
+    GenServer.call(server, {:create, name})
   end
 
   ## Defining GenServer callbacks
@@ -51,12 +51,9 @@ defmodule KV.Registry do
     {:ok, {names, refs}}
   end
 
-  # Since the previous implementation of `handle_call` was, perhaps, not the best (previous documentation
-  # mentioned that the lookup feature could be a bottleneck since `handle_call` is synchronous), we remove
-  # the code and replace it with `handle_cast`.
-
   @impl true
-  def handle_cast({:create, name}, {names, refs}) do
+  def handle_call({:create, name}, _from, {names, refs}) do
+    # Note that a call provides "back pressure" since the client **must** wait for the response.
     case lookup(names, name) do
       # `name` **already** exists in ETS so we do not reply but only update the state. (Remember, a client
       # must **already** know the name of the table set at creation.
@@ -68,10 +65,10 @@ defmodule KV.Registry do
         updated_refs = Map.put(refs, ref, name)
 
         # ...insert the bucket into ETS associated with `name`,
-        :ets.insert{names, {name, pid}}
+        :ets.insert(names, {name, pid})
 
-        # ...and update the state without responding.
-        {:noreply, {names, updated_refs}}
+        # ...reply with the process ID of the bucket and update the state.
+        {:reply, pid, {names, updated_refs}}
     end
   end
 
